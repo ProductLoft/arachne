@@ -54,14 +54,8 @@ def current() -> SkyvernContext | None:
     return _context.get()
 
 
-class VideoArtifact(BaseModel):
-    video_path: str | None = None
-    video_artifact_id: str | None = None
-    video_data: bytes = bytes()
-
 
 class BrowserArtifacts(BaseModel):
-    video_artifacts: list[VideoArtifact] = []
     har_path: str | None = None
     traces_dir: str | None = None
 
@@ -87,8 +81,7 @@ class BrowserContextFactory:
 
     @staticmethod
     def build_browser_args() -> dict[str, Any]:
-        video_dir = f"video/{datetime.utcnow().strftime('%Y-%m-%d')}"
-        har_dir = f"video/{datetime.utcnow().strftime('%Y-%m-%d')}/{BrowserContextFactory.get_subdir()}.har"
+        har_dir = f"har/{datetime.utcnow().strftime('%Y-%m-%d')}/{BrowserContextFactory.get_subdir()}.har"
         return {
             "user_data_dir": tempfile.mkdtemp(prefix="skyvern_browser_"),
             "locale": "en-US",
@@ -103,7 +96,6 @@ class BrowserContextFactory:
                 "--enable-automation",
             ],
             "record_har_path": har_dir,
-            "record_video_dir": video_dir,
             "viewport": {
                 "width": 1920,
                 "height": 1080,
@@ -112,12 +104,10 @@ class BrowserContextFactory:
 
     @staticmethod
     def build_browser_artifacts(
-            video_artifacts: list[VideoArtifact] | None = None,
             har_path: str | None = None,
             traces_dir: str | None = None,
     ) -> BrowserArtifacts:
         return BrowserArtifacts(
-            video_artifacts=video_artifacts or [],
             har_path=har_path,
             traces_dir=traces_dir,
         )
@@ -312,16 +302,6 @@ class BrowserState:
         self.__page = page
         if page is None:
             return
-        if len(self.browser_artifacts.video_artifacts) > index:
-            if self.browser_artifacts.video_artifacts[index].video_path is None:
-                self.browser_artifacts.video_artifacts[index].video_path = await page.video.path()
-            return
-
-        target_lenght = index + 1
-        self.browser_artifacts.video_artifacts.extend(
-            [VideoArtifact()] * (target_lenght - len(self.browser_artifacts.video_artifacts))
-        )
-        self.browser_artifacts.video_artifacts[index].video_path = await page.video.path()
         return
 
     async def get_or_create_page(

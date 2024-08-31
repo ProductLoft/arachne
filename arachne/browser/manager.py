@@ -3,7 +3,7 @@ from arachne.browser.task import Task
 
 from playwright.async_api import async_playwright, Page
 
-from arachne.browser.state import BrowserState, BrowserContextFactory, VideoArtifact
+from arachne.browser.state import (BrowserState, BrowserContextFactory)
 
 import structlog
 from typing import Self
@@ -54,43 +54,6 @@ class BrowserManager:
         if workflow_run_id in self.pages:
             return self.pages[workflow_run_id]
         return None
-
-    def set_video_artifact_for_task(self, task: Task, artifacts: list[VideoArtifact]) -> None:
-        if task.workflow_run_id and task.workflow_run_id in self.pages:
-            self.pages[task.workflow_run_id].browser_artifacts.video_artifacts = artifacts
-            return
-        if task.task_id in self.pages:
-            self.pages[task.task_id].browser_artifacts.video_artifacts = artifacts
-            return
-
-        raise MissingBrowserState(task_id=task.task_id)
-
-    async def get_video_artifacts(
-            self,
-            browser_state: BrowserState,
-            task_id: str = "",
-            workflow_id: str = "",
-            workflow_run_id: str = "",
-    ) -> list[VideoArtifact]:
-        if len(browser_state.browser_artifacts.video_artifacts) == 0:
-            log.warning(
-                "Video data not found for task",
-                task_id=task_id,
-                workflow_id=workflow_id,
-                workflow_run_id=workflow_run_id,
-            )
-            return []
-
-        for i, video_artifact in enumerate(browser_state.browser_artifacts.video_artifacts):
-            path = video_artifact.video_path
-            if path:
-                try:
-                    with open(path, "rb") as f:
-                        browser_state.browser_artifacts.video_artifacts[i].video_data = f.read()
-
-                except FileNotFoundError:
-                    pass
-        return browser_state.browser_artifacts.video_artifacts
 
     async def get_har_data(
             self,
