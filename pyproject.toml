@@ -13,6 +13,10 @@ structlog = "^24.4.0"
 fastapi = "^0.112.2"
 boto3 = "^1.35.10"
 regex = "^2024.7.24"
+jupyterlab = "^4.2.5"
+langchain = "^0.2.16"
+langchain-community = "^0.2.16"
+langchain-core = "^0.2.38"
 
 
 [build-system]

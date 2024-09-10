@@ -1,131 +1,39 @@
-import asyncio
-from arachne.browser.task import Task
+from datetime import datetime
+from typing import Any, TypedDict
 
-from playwright.async_api import async_playwright, Page
-
-from arachne.browser.state import (BrowserState, BrowserContextFactory)
-
-import structlog
-from typing import Self
-
-from arachne.exceptions import MissingBrowserState
-
-log = structlog.get_logger()
+from playwright.async_api import Page as PageAsync
 
 
-class BrowserManager:
-    pages = None
-    instance = None
-    state: BrowserState = None
-    page = None
+class ViewPortSize(TypedDict):
+    width: int
+    height: int
+    content_height: int
 
-    def __new__(self):
-        if self.instance is None:
-            self.instance = super().__new__(self)
-        return self.instance
 
-    async def open_url(self, url: str) -> Page:
-        browser_state = await self.state.goto_page(url)
-        return
+class PlaywrightAsync:
+    STRIP_RETURN = "return window."
 
-    async def _init(
-            self,
-            url: str | None = None,
-    ) -> Self:
-        pw = await async_playwright().start()
-        (
-            browser_context,
-            browser_artifacts,
-            browser_cleanup,
-        ) = await BrowserContextFactory.create_browser_context(
-            pw,
-            url=url,
-        )
-        self.browser_context = browser_context
-        self.state = BrowserState(
-            pw=pw,
-            browser_context=browser_context,
-            page=None,
-            browser_artifacts=browser_artifacts,
-            browser_cleanup=browser_cleanup,
+    def __init__(self, page: PageAsync):
+        self._page = page
+
+    async def run_js(self, js: str) -> Any:
+        if js.startswith(self.STRIP_RETURN):
+            js = js[len(self.STRIP_RETURN):]
+
+        print(type(self._page))
+
+        return await self._page.evaluate(js)
+
+    async def take_screenshot(self) -> bytes:
+        return await self._page.screenshot(path=f"debug-ss/{datetime.now()}.png", type="png", full_page=True,
+                                           omit_background=True)
+
+    async def set_viewport_size(self, width: int, height: int) -> None:
+        await self._page.set_viewport_size({"width": width, "height": height})
+
+    async def get_viewport_size(self) -> ViewPortSize:
+        width, height, scroll_height = await self.run_js(
+            "[window.innerWidth, window.innerHeight, document.documentElement.scrollHeight]"
         )
 
-    async def get_for_workflow_run(self, workflow_run_id: str) -> BrowserState | None:
-        if workflow_run_id in self.pages:
-            return self.pages[workflow_run_id]
-        return None
-
-    async def get_har_data(
-            self,
-            browser_state: BrowserState,
-            task_id: str = "",
-            workflow_id: str = "",
-            workflow_run_id: str = "",
-    ) -> bytes:
-        if browser_state:
-            path = browser_state.browser_artifacts.har_path
-            if path:
-                with open(path, "rb") as f:
-                    return f.read()
-        log.warning(
-            "HAR data not found for task",
-            task_id=task_id,
-            workflow_id=workflow_id,
-            workflow_run_id=workflow_run_id,
-        )
-        return b""
-
-    @classmethod
-    async def close(self) -> None:
-        log.info("Closing BrowserManager")
-        for browser_state in self.pages.values():
-            await browser_state.close()
-        self.pages = dict()
-        log.info("BrowserManger is closed")
-
-    async def cleanup_for_task(self, task_id: str, close_browser_on_completion: bool = True) -> BrowserState | None:
-        log.info("Cleaning up for task")
-        browser_state_to_close = self.pages.pop(task_id, None)
-        try:
-            if browser_state_to_close:
-                async with asyncio.timeout(180):
-                    # Stop tracing before closing the browser if tracing is enabled
-                    if browser_state_to_close.browser_context and browser_state_to_close.browser_artifacts.traces_dir:
-                        trace_path = f"{browser_state_to_close.browser_artifacts.traces_dir}/{task_id}.zip"
-                        await browser_state_to_close.browser_context.tracing.stop(path=trace_path)
-                        log.info("Stopped tracing", trace_path=trace_path)
-                    await browser_state_to_close.close(close_browser_on_completion=close_browser_on_completion)
-            log.info("Task is cleaned up")
-        except TimeoutError:
-            log.warning("Timeout on task cleanup")
-
-        return browser_state_to_close
-
-    async def cleanup_for_workflow_run(
-            self,
-            workflow_run_id: str,
-            task_ids: list[str],
-            close_browser_on_completion: bool = True,
-    ) -> BrowserState | None:
-        log.info("Cleaning up for workflow run")
-        browser_state_to_close = self.pages.pop(workflow_run_id, None)
-        if browser_state_to_close:
-            # Stop tracing before closing the browser if tracing is enabled
-            if browser_state_to_close.browser_context and browser_state_to_close.browser_artifacts.traces_dir:
-                trace_path = f"{browser_state_to_close.browser_artifacts.traces_dir}/{workflow_run_id}.zip"
-                await browser_state_to_close.browser_context.tracing.stop(path=trace_path)
-                log.info("Stopped tracing", trace_path=trace_path)
-
-            await browser_state_to_close.close(close_browser_on_completion=close_browser_on_completion)
-        for task_id in task_ids:
-            self.pages.pop(task_id, None)
-        log.info("Workflow run is cleaned up")
-
-        return browser_state_to_close
-
-
-async def createBrowserManager(url: str | None = None) -> BrowserManager:
-    bm = BrowserManager()
-    await bm._init(url)
-    print("Browser state created")
-    return bm
+        return {"width": width, "height": height, "content_height": scroll_height}

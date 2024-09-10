@@ -1,0 +1,19 @@
+{
+  "name": "arachne",
+  "description": "Web interaction agents",
+  "private": true,
+  "version": "0.4.3",
+  "author": "Reworkd AI, INC.",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json && esbuild ./arachne/tags.js --minify --outfile=./arachne/tags.min.js",
+    "format": "prettier --no-config --no-editorconfig --write .",
+    "lint": "prettier --no-config --no-editorconfig --check ."
+  },
+  "keywords": [],
+  "devDependencies": {
+    "esbuild": "^0.19.5",
+    "prettier": "^3.1.0",
+    "typescript": "^5.2.2"
+  }
+}

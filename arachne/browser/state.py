@@ -1,12 +1,10 @@
 import asyncio
 import tempfile
 import uuid
-from asyncio import Protocol
 from contextvars import ContextVar
 from dataclasses import field, dataclass
 from datetime import datetime
 import time
-from enum import StrEnum
 
 from playwright.async_api import BrowserContext, Error, Page, Playwright, async_playwright
 from pydantic import BaseModel
@@ -187,7 +185,7 @@ class BrowserState:
             browser_artifacts: BrowserArtifacts = BrowserArtifacts(),
             browser_cleanup: BrowserCleanupFunc = None,
     ):
-        self.__page = page
+        self.__page = browser_context.pages[-1] if page is None and browser_context is not None else page
         self.pw = pw
         self.browser_context = browser_context
         self.browser_artifacts = browser_artifacts
@@ -199,7 +197,7 @@ class BrowserState:
 
     async def goto_page(self, url: str) -> Page:
         # TODO: Suriya this needs to go if we're going to be opening a new link in the same page
-        page = await self.get_or_create_page(url)
+        page = await self.__page.goto(url)
         return page
 
     async def __assert_page(self) -> Page:
@@ -253,7 +251,7 @@ class BrowserState:
                     page = await self.browser_context.new_page()
                     await self.set_working_page(page, 0)
                     await self._close_all_other_pages()
-                    log.info("A new page is created")
+                    log.info(f"A new page is created {url}")
                     if url:
                         log.info(f"Navigating page to {url} and waiting for 5 seconds")
                         try:
@@ -310,11 +308,13 @@ class BrowserState:
     ) -> Page:
         log.info(f"Getting or creating page {url}")
         page = await self.get_working_page()
+        log.info(f"Got working page {page}")
         if page is not None:
             return page
 
         try:
             await self.check_and_fix_state(
+                url=url
             )
         except Exception as e:
             error_message = str(e)

@@ -2,3 +2,17 @@
 video/*
 
 */__pycache__/*
+
+config.json
+*.env
+
+*.DS_Store
+
+node_modules/*
+
+**/__pycache__
+
+
+*.d.ts
+*.js
+*.min.js

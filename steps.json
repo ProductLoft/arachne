@@ -1,0 +1,40 @@
+{
+  "goal": "Post about LLMs being awesome on LinkedIn",
+  "subtasks": [
+    {
+      "description": "Open a web browser and navigate to LinkedIn",
+      "resources": [
+        "Web browser (e.g., Google Chrome, Mozilla Firefox, Safari)"
+      ]
+    },
+    {
+      "description": "Log in to your LinkedIn account",
+      "resources": [
+        "LinkedIn account credentials (email/username and password)"
+      ]
+    },
+    {
+      "description": "Click on the 'Start a post' button",
+      "resources": []
+    },
+    {
+      "description": "Write a compelling post about LLMs (Large Language Models) being awesome",
+      "resources": [
+        "Knowledge about LLMs and their capabilities",
+        "Examples of how LLMs can be used in various applications"
+      ]
+    },
+    {
+      "description": "Add relevant hashtags (e.g., #AI, #NLP, #LLM, #MachineLearning)",
+      "resources": []
+    },
+    {
+      "description": "Review the post for any errors or typos",
+      "resources": []
+    },
+    {
+      "description": "Click the 'Post' button to publish the post on LinkedIn",
+      "resources": []
+    }
+  ]
+}
