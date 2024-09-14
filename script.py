@@ -68,7 +68,8 @@ async def _main():
         image, inner_tag_to_xpath = await ww.page_to_image(page)
         tag_to_xpath.clear()
         tag_to_xpath.update(inner_tag_to_xpath)
-        return encode_image(image)
+        screenshot_buffer = io.BytesIO(image)
+        return encode_image(Image.open(screenshot_buffer))
 
     async def click(element_id: int) -> str:
         """
@@ -104,7 +105,13 @@ async def _main():
 
     p = await async_playwright().__aenter__()
     browser = await p.chromium.launch(headless=False)
+    context = await browser.new_context()
     page = await browser.new_page()
+    pages = []
+    async def handle_page(page):
+        pages.append(page)
+        print("New Page opened")
+    context.on("page", handle_page)
 
 
     # with open("config.json", "r") as f:
@@ -114,11 +121,10 @@ async def _main():
     tag_to_xpath = {}
     tasks_history = []
 
-    question = ""
+    question = "Login using the following credentials Andrewid: prahalalaac@andrew.cmu.edu Password: Iloverosie"
+    site_name = "https://www.cmu.edu/hub/sio/about.html"
 
-    site_name = "https://reddit.com"
-
-    await page.goto("https://reddit.com")
+    await page.goto("https://www.cmu.edu/hub/sio/about.html")
 
     print(type(page))
 
@@ -127,10 +133,10 @@ async def _main():
     screenshot_buffer = io.BytesIO(screenshot)
     images = encode_image(Image.open(screenshot_buffer))
     notDone = True
-
+    
 
     while notDone:
-
+        
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}"
@@ -217,7 +223,7 @@ async def _main():
             elif resp_json["action"] == "type_text":
                 print("Typing")
                 action_inputs = resp_json.get("action_input", ["0", "0"])
-                await type_text(action_inputs[0], action_inputs[1])
+                await type_text(action_inputs[1], action_inputs[0])
             elif resp_json["action"] == "go_to_url":
                 print("Going to URL")
                 action_inputs = resp_json.get("action_input", "https://google.com")
@@ -227,6 +233,12 @@ async def _main():
             print(response.json())
             print(f'Exception Reason : {e}')
             notDone = False
+    
+
+        page = pages[-1] if len(pages) > 0 else page
+        print("context.page",len(pages))
+        print("context.page",pages)
+
 
 
 asyncio.run(_main())
