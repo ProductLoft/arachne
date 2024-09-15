@@ -1,6 +1,7 @@
 import json
 
 import boto3
+from PIL.Image import Image
 from regex import regex
 
 import structlog
